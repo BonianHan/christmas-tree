@@ -54,6 +54,19 @@ const CONFIG = {
   }
 };
 
+// --- 音频配置 ---
+const AUDIO_CONFIG = {
+  musicUrl: "/music/Christmas.mp3", // 使用你的音乐文件
+  volume: 0.3, // 音量 0-1
+  loop: true   // 循环播放
+};
+
+// --- 🖼️ 角落图片配置 ---
+const CORNER_IMAGES = {
+  topLeft: "img/top-left.gif",     // 左上角图片
+  topRight: "img/top-right.gif",   // 右上角图片
+};
+
 // --- Shader Material (Foliage) ---
 const FoliageMaterial = shaderMaterial(
   { uTime: 0, uColor: new THREE.Color(CONFIG.colors.emerald), uProgress: 0 },
@@ -348,16 +361,15 @@ const TopStar = ({ state }: { state: 'CHAOS' | 'FORMED' }) => {
 
   const starGeometry = useMemo(() => {
     return new THREE.ExtrudeGeometry(starShape, {
-      depth: 0.4, // 增加一点厚度
+      depth: 0.4,
       bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 3,
     });
   }, [starShape]);
 
-  // 纯金材质
   const goldMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: CONFIG.colors.gold,
     emissive: CONFIG.colors.gold,
-    emissiveIntensity: 1.5, // 适中亮度，既发光又有质感
+    emissiveIntensity: 1.5,
     roughness: 0.1,
     metalness: 1.0,
   }), []);
@@ -433,7 +445,7 @@ const GestureController = ({ onGesture, onMove, onStatus, debugMode }: any) => {
     let requestRef: number;
 
     const setup = async () => {
-      onStatus("DOWNLOADING AI...");
+      onStatus("正在下载 AI 模型...");
       try {
         const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
         gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
@@ -444,20 +456,20 @@ const GestureController = ({ onGesture, onMove, onStatus, debugMode }: any) => {
           runningMode: "VIDEO",
           numHands: 1
         });
-        onStatus("REQUESTING CAMERA...");
+        onStatus("正在请求摄像头权限...");
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             videoRef.current.play();
-            onStatus("AI READY: SHOW HAND");
+            onStatus("AI 已就绪：请伸手");
             predictWebcam();
           }
         } else {
-            onStatus("ERROR: CAMERA PERMISSION DENIED");
+            onStatus("错误：摄像头权限被拒绝");
         }
       } catch (err: any) {
-        onStatus(`ERROR: ${err.message || 'MODEL FAILED'}`);
+        onStatus(`错误：${err.message || '模型加载失败'}`);
       }
     };
 
@@ -480,13 +492,13 @@ const GestureController = ({ onGesture, onMove, onStatus, debugMode }: any) => {
               const name = results.gestures[0][0].categoryName; const score = results.gestures[0][0].score;
               if (score > 0.4) {
                  if (name === "Open_Palm") onGesture("CHAOS"); if (name === "Closed_Fist") onGesture("FORMED");
-                 if (debugMode) onStatus(`DETECTED: ${name}`);
+                 if (debugMode) onStatus(`检测到：${name}`);
               }
               if (results.landmarks.length > 0) {
                 const speed = (0.5 - results.landmarks[0][0].x) * 0.15;
                 onMove(Math.abs(speed) > 0.01 ? speed : 0);
               }
-            } else { onMove(0); if (debugMode) onStatus("AI READY: NO HAND"); }
+            } else { onMove(0); if (debugMode) onStatus("AI 已就绪：未检测到手势"); }
         }
         requestRef = requestAnimationFrame(predictWebcam);
       }
@@ -507,46 +519,173 @@ const GestureController = ({ onGesture, onMove, onStatus, debugMode }: any) => {
 export default function GrandTreeApp() {
   const [sceneState, setSceneState] = useState<'CHAOS' | 'FORMED'>('CHAOS');
   const [rotationSpeed, setRotationSpeed] = useState(0);
-  const [aiStatus, setAiStatus] = useState("INITIALIZING...");
+  const [aiStatus, setAiStatus] = useState("初始化中...");
   const [debugMode, setDebugMode] = useState(false);
+  
+  // 🎵 音乐控制状态
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // 🎵 音乐初始化
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = AUDIO_CONFIG.volume;
+      audioRef.current.loop = AUDIO_CONFIG.loop;
+    }
+  }, []);
+
+  // 🎵 音乐播放/暂停切换
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(() => {
+          console.log("音乐播放被浏览器阻止，需要用户交互后才能播放");
+        });
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
 
   return (
     <div style={{ width: '100vw', height: '100vh', backgroundColor: '#000', position: 'relative', overflow: 'hidden' }}>
+      
+      {/* 🎵 隐藏的音频元素 */}
+      <audio ref={audioRef} src={AUDIO_CONFIG.musicUrl} />
+
+      {/* Canvas */}
       <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
         <Canvas dpr={[1, 2]} gl={{ toneMapping: THREE.ReinhardToneMapping }} shadows>
             <Experience sceneState={sceneState} rotationSpeed={rotationSpeed} />
         </Canvas>
       </div>
+
       <GestureController onGesture={setSceneState} onMove={setRotationSpeed} onStatus={setAiStatus} debugMode={debugMode} />
+
+      {/* 🖼️ 左上角图片 */}
+      <img 
+        src={CORNER_IMAGES.topLeft} 
+        alt="Left Decoration"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          width: '150px',
+          height: 'auto',
+          zIndex: 10,
+          pointerEvents: 'none',
+          opacity: 0.9,
+          filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))'
+        }}
+      />
+
+      {/* 🖼️ 右上角图片 */}
+      <img 
+        src={CORNER_IMAGES.topRight} 
+        alt="Right Decoration"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          width: '150px',
+          height: 'auto',
+          zIndex: 10,
+          pointerEvents: 'none',
+          opacity: 0.9,
+          filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))'
+        }}
+      />
 
       {/* UI - Stats */}
       <div style={{ position: 'absolute', bottom: '30px', left: '40px', color: '#888', zIndex: 10, fontFamily: 'sans-serif', userSelect: 'none' }}>
         <div style={{ marginBottom: '15px' }}>
-          <p style={{ fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>Memories</p>
+          <p style={{ fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>和王铱然在一起的</p>
           <p style={{ fontSize: '24px', color: '#FFD700', fontWeight: 'bold', margin: 0 }}>
-            {CONFIG.counts.ornaments.toLocaleString()} <span style={{ fontSize: '10px', color: '#555', fontWeight: 'normal' }}>POLAROIDS</span>
+            两个月 <span style={{ fontSize: '10px', color: '#555', fontWeight: 'normal' }}>的回忆</span>
           </p>
         </div>
         <div>
-          <p style={{ fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>Foliage</p>
-          <p style={{ fontSize: '24px', color: '#004225', fontWeight: 'bold', margin: 0 }}>
-            {(CONFIG.counts.foliage / 1000).toFixed(0)}K <span style={{ fontSize: '10px', color: '#555', fontWeight: 'normal' }}>EMERALD NEEDLES</span>
+          <p style={{ fontSize: '10px', letterSpacing: '2px', marginBottom: '4px' }}>圣诞快乐</p>
+          <p style={{ fontSize: '24px', color: '#D32F2F', fontWeight: 'bold', margin: 0 }}>
+            🎄 Merry Christmas
           </p>
         </div>
       </div>
 
       {/* UI - Buttons */}
       <div style={{ position: 'absolute', bottom: '30px', right: '40px', zIndex: 10, display: 'flex', gap: '10px' }}>
-        <button onClick={() => setDebugMode(!debugMode)} style={{ padding: '12px 15px', backgroundColor: debugMode ? '#FFD700' : 'rgba(0,0,0,0.5)', border: '1px solid #FFD700', color: debugMode ? '#000' : '#FFD700', fontFamily: 'sans-serif', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
-           {debugMode ? 'HIDE DEBUG' : '🛠 DEBUG'}
+        
+        {/* 🎵 音乐控制按钮 */}
+        <button 
+          onClick={toggleMusic} 
+          style={{ 
+            padding: '12px 20px', 
+            backgroundColor: isMusicPlaying ? '#FF0000' : 'rgba(0,0,0,0.5)', 
+            border: isMusicPlaying ? '1px solid #FF0000' : '1px solid #FFD700', 
+            color: isMusicPlaying ? '#FFFFFF' : '#FFD700', 
+            fontFamily: 'sans-serif', 
+            fontSize: '14px', 
+            fontWeight: 'bold', 
+            cursor: 'pointer', 
+            backdropFilter: 'blur(4px)',
+            transition: 'all 0.3s'
+          }}
+        >
+          {isMusicPlaying ? '🔇 暂停音乐' : '🎵 播放音乐'}
         </button>
-        <button onClick={() => setSceneState(s => s === 'CHAOS' ? 'FORMED' : 'CHAOS')} style={{ padding: '12px 30px', backgroundColor: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255, 215, 0, 0.5)', color: '#FFD700', fontFamily: 'serif', fontSize: '14px', fontWeight: 'bold', letterSpacing: '3px', textTransform: 'uppercase', cursor: 'pointer', backdropFilter: 'blur(4px)' }}>
-           {sceneState === 'CHAOS' ? 'Assemble Tree' : 'Disperse'}
+
+        <button 
+          onClick={() => setDebugMode(!debugMode)} 
+          style={{ 
+            padding: '12px 20px', 
+            backgroundColor: debugMode ? '#FFD700' : 'rgba(0,0,0,0.5)', 
+            border: '1px solid #FFD700', 
+            color: debugMode ? '#000' : '#FFD700', 
+            fontFamily: 'sans-serif', 
+            fontSize: '14px', 
+            fontWeight: 'bold', 
+            cursor: 'pointer', 
+            backdropFilter: 'blur(4px)' 
+          }}
+        >
+           {debugMode ? '隐藏相机' : '🛠 查看相机'}
+        </button>
+        
+        <button 
+          onClick={() => setSceneState(s => s === 'CHAOS' ? 'FORMED' : 'CHAOS')} 
+          style={{ 
+            padding: '12px 30px', 
+            backgroundColor: 'rgba(0,0,0,0.5)', 
+            border: '1px solid rgba(255, 215, 0, 0.5)', 
+            color: '#FFD700', 
+            fontFamily: 'sans-serif', 
+            fontSize: '16px', 
+            fontWeight: 'bold', 
+            letterSpacing: '3px', 
+            cursor: 'pointer', 
+            backdropFilter: 'blur(4px)' 
+          }}
+        >
+           {sceneState === 'CHAOS' ? '✨ 聚拢' : '💫 散开'}
         </button>
       </div>
 
       {/* UI - AI Status */}
-      <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', color: aiStatus.includes('ERROR') ? '#FF0000' : 'rgba(255, 215, 0, 0.4)', fontSize: '10px', letterSpacing: '2px', zIndex: 10, background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px' }}>
+      <div style={{ 
+        position: 'absolute', 
+        top: '20px', 
+        left: '50%', 
+        transform: 'translateX(-50%)', 
+        color: aiStatus.includes('错误') ? '#FF0000' : 'rgba(255, 215, 0, 0.6)', 
+        fontSize: '12px', 
+        letterSpacing: '1px', 
+        zIndex: 10, 
+        background: 'rgba(0,0,0,0.6)', 
+        padding: '8px 16px', 
+        borderRadius: '6px',
+        fontFamily: 'sans-serif'
+      }}>
         {aiStatus}
       </div>
     </div>
