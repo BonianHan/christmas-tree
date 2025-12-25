@@ -1,3 +1,10 @@
+# Bonian
+
+1. 加了 music，在 `public/music`，可以自行更换，然后在 `christmas-tree/src/App.tsx` 修改  
+2. 前端 UI 文字在 `/Users/bonianhan/Projects/christmas-tree/src/App.tsx` 修改  
+3. 图片批量上传：使用 `prepro.ipynb` 来指定输入和输出，输出后在 `/christmas-tree/src/App.tsx` 中使用
+
+
 # 🎄 Grand Luxury Interactive 3D Christmas Tree
 
 > 一个基于 **React**, **Three.js (R3F)** 和 **AI 手势识别** 的高保真 3D 圣诞树 Web 应用。
