@@ -1,8 +1,8 @@
 # Bonian
 
 1. 加了 music，在 `public/music`，可以自行更换，然后在 `christmas-tree/src/App.tsx` 修改  
-2. 前端 UI 文字在 `/Users/bonianhan/Projects/christmas-tree/src/App.tsx` 修改  
-3. 图片批量上传：使用 `prepro.ipynb` 来指定输入和输出，输出后在 `/christmas-tree/src/App.tsx` 中使用
+2. 前端 UI 文字在 `christmas-tree/src/App.tsx` 修改  
+3. 图片批量上传：使用 `prepro.ipynb` 来指定输入和输出，输出放在 `christmas-tree/public/photos` 中使用
 
 
 # 🎄 Grand Luxury Interactive 3D Christmas Tree
