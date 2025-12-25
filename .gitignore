@@ -24,12 +24,7 @@ dist-ssr
 *.sw?
 .vercel
 
-/photos/*.jpg
-/photos/*.png
-/photos/*.heic
-/public/photos/*.jpg
-/public/photos/*.JPG
-/public/photos/*.png
-/public/photos/*.PNG
-/public/photos/*.heic
-/public/photos/*.HEIC
+/photos/*
+!/photos/.gitkeep
+/public/photos/*
+!/public/photos/.gitkeep
