@@ -27,7 +27,9 @@ dist-ssr
 /photos/*.jpg
 /photos/*.png
 /photos/*.heic
-
 /public/photos/*.jpg
-/public/*.png
+/public/photos/*.JPG
+/public/photos/*.png
+/public/photos/*.PNG
 /public/photos/*.heic
+/public/photos/*.HEIC
